@@ -1,17 +1,16 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-#define pinRelayLED    5
-#define pinMqttStatusLED  12
+#define pinMqttStatusLED  BUILTIN_LED
 
 // Update these with publishCounts suitable for your network.
 const char* ssid = "[your ssid]";
 const char* password = "[your password]";
 
 const char* mqtt_server = "mqtt.eclipse.org";
-const char* mqtt_id = "ESP32Client";
+const char* mqtt_id = "[your unique id]";
 const char* mqtt_publish_topic = "[your topic]";
-const int   mqtt_qos = 1;  //0：at most once    1：at least once    2：exactly once）
+const int   mqtt_qos = 1;  //0：at most once 1：at least once 2：exactly once
 const bool  mqtt_retain = true;
 
 WiFiClient espWiFiClient;
@@ -21,26 +20,16 @@ char msg[50];
 int publishCount = 0, reConnectCount=0;
 
 void setup() {
-  pinMode(pinRelayLED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
-  digitalWrite(pinRelayLED, LOW);  
-  pinMode(pinMqttStatusLED, OUTPUT);  
-  for (int i=0; i<3; i++) {   
-    digitalWrite(pinMqttStatusLED, HIGH);
-    delay(500);
-    digitalWrite(pinMqttStatusLED, LOW);  
-    delay(500);
-  }
- 
+  pinMode(pinMqttStatusLED, OUTPUT);   
   Serial.begin(115200);
+
   setup_wifi();
- 
   mqttClient.setServer(mqtt_server, 1883);
   //mqttClient.setCallback(callback);  
-
+  digitalWrite(pinMqttStatusLED, LOW);
   while (!mqttClient.connected()) { // Loop until we're connected
       mqttConnect();   
   }
-  digitalWrite(pinMqttStatusLED, HIGH);
 }
 
 void setup_wifi() {
@@ -83,9 +72,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void mqttConnect() {  
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    boolean connectOK = mqttClient.connect("ESP32Client"/*mqtt_id, mqtt_publish_topic, mqtt_qos, mqtt_retain*/); //, "esp32 connected");
+    boolean connectOK = mqttClient.connect(*mqtt_id, /*mqtt_publish_topic, mqtt_qos, mqtt_retain*/);
     if (connectOK) {  //deviceID
       Serial.println("mqtt broker connected");
+      digitalWrite(pinMqttStatusLED, HIGH);
       // Once connected, publish an announcement...
       //mqttClient.publish(mqtt_publish_topic, "esp32 connected");
       // ... and resubscribe
@@ -96,6 +86,7 @@ void mqttConnect() {
       Serial.print(mqttClient.state());
       Serial.print("  reConnectCount = ");
       Serial.println(reConnectCount);
+      digitalWrite(pinMqttStatusLED, LOW);
       //Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
@@ -104,16 +95,16 @@ void mqttConnect() {
 
 void loop() {
   if (!mqttClient.connected()) {
+    digitalWrite(pinMqttStatusLED, LOW);
     mqttConnect();
     reConnectCount++;
-    digitalWrite(pinMqttStatusLED, LOW);
   } else {
-    mqttClient.loop();
+    //mqttClient.loop();
     long now = millis();
     if (now - lastMsgMillis > 2000) {
       lastMsgMillis = now;
       ++publishCount;
-      snprintf (msg, 75, "hello world #%ld", publishCount);
+      snprintf (msg, 75, "%ld", publishCount);
       Serial.print("Publish message: ");
       Serial.println(msg);
       mqttClient.publish(mqtt_publish_topic, msg);
