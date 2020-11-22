@@ -60,19 +60,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }  
   Serial.print("     reConnectCount = ");
   Serial.println(reConnectCount);
-
-  // Switch on the LED if an 1 was received as first character
-  if (payload[0] == '0') {
-    digitalWrite(pinRelayLED, LOW);   
-  } else if (payload[0] == '1') {
-    digitalWrite(pinRelayLED, HIGH);  // Turn the LED off by making the voltage HIGH
-  }
 }
 
 void mqttConnect() {  
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    boolean connectOK = mqttClient.connect(*mqtt_id, /*mqtt_publish_topic, mqtt_qos, mqtt_retain*/);
+    boolean connectOK = mqttClient.connect(mqtt_id /*, mqtt_publish_topic, mqtt_qos, mqtt_retain*/);
     if (connectOK) {  //deviceID
       Serial.println("mqtt broker connected");
       digitalWrite(pinMqttStatusLED, HIGH);
